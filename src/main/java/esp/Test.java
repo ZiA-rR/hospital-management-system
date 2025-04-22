@@ -107,6 +107,7 @@ class ReminderService {
 
 // Patient class
 class patient extends user {
+    private static Administrator admin;
     private ArrayList<VitalSign> vital;
     private ArrayList<Appointment> appointments;
     private ArrayList<Feedback> feedbackList;
@@ -157,10 +158,19 @@ class patient extends user {
     public void addFeedback(Feedback feedback) {
         feedbackList.add(feedback);
     }
-
     public void requestAppointment(String appointmentId, String doctorId, LocalDateTime appointmentDate) {
+        admin = Test.admin; // Get the admin instance from Test class
         Appointment appointment = new Appointment(appointmentId, this.getId(), doctorId, appointmentDate);
         this.getAppointments().add(appointment);
+        this.getAppointments().add(appointment);
+        
+        // Add appointment to doctor's list
+        for (Doctor doc : admin.getDoctors()) {
+            if (doc.getId().equals(doctorId)) {
+                doc.getAppointments().add(appointment);
+                break;
+            }
+        }
         System.out.println("Appointment request submitted successfully.");
     }
 }
@@ -172,7 +182,7 @@ class Doctor extends user {
     private ArrayList<Appointment> appointments;
 
     public Doctor(String id, String name, String email) {
-        super(id, name, email);
+        super(name, id, email);  // Changed order to match user constructor
         this.patients = new ArrayList<>();
         this.appointments = new ArrayList<>();
     }
@@ -182,6 +192,18 @@ class Doctor extends user {
     }
 
     public void approveAppointment(String appointmentId) {
+        if (appointments.isEmpty()) {
+            System.out.println("No appointments found for approval.");
+            return;
+        }
+
+        System.out.println("\nCurrent Appointments:");
+        for (Appointment apt : appointments) {
+            System.out.println("ID: " + apt.getAppointmentId() + 
+                             " | Patient: " + apt.getPatientId() +
+                             " | Status: " + (apt.isApproved() ? "Approved" : "Pending"));
+        }
+
         for (Appointment appointment : appointments) {
             if (appointment.getAppointmentId().equals(appointmentId)) {
                 appointment.approveAppointment();
@@ -225,18 +247,19 @@ class Administrator extends user {
 
     public void addDoctor(Doctor doctor) {
         doctors.add(doctor);
-        systemLogs.add("New doctor added: " + doctor.getName());
+        systemLogs.add("New doctor added - Name: " + doctor.getName() + ", ID: " + doctor.getId());
     }
 
     public void addPatient(patient patient) {
         patients.add(patient);
-        systemLogs.add("New patient added: " + patient.getName());
+        systemLogs.add("New patient added - Name: " + patient.getName() + ", ID: " + patient.getId());
     }
 
     public void viewSystemLogs() {
         if (systemLogs.isEmpty()) {
             System.out.println("No logs found");
         } else {
+            System.out.println("\n--- System Logs ---");
             for (String log : systemLogs) {
                 System.out.println(log);
             }
@@ -525,7 +548,7 @@ public class Test {
                 System.out.println("2. Add Patient");
                 System.out.println("3. View System Logs");
                 System.out.println("4. Send System Notification");
-                System.out.println("5. Send Email to Family Member");
+                System.out.println("5. Send Email");  
                 System.out.println("6. Back to Main Menu");
                 System.out.print("Enter your choice: ");
                 int adminChoice = scanner.nextInt();
@@ -540,6 +563,7 @@ public class Test {
                         String doctorId = scanner.nextLine();
                         System.out.print("Email: ");
                         String doctorEmail = scanner.nextLine();
+                        
                         Doctor newDoctor = new Doctor(doctorId, doctorName, doctorEmail);
                         admin.addDoctor(newDoctor);
                         System.out.println("Doctor added successfully!");
@@ -558,7 +582,13 @@ public class Test {
                         break;
                     case 3:
                         System.out.println("\n--- System Logs ---");
-                        admin.viewSystemLogs();
+                        if (admin.getSystemLogs().isEmpty()) {
+                            System.out.println("No logs available.");
+                        } else {
+                            for (String log : admin.getSystemLogs()) {
+                                System.out.println(log);
+                            }
+                        }
                         break;
                     case 4:
                         System.out.println("\nSend System Notification:");
