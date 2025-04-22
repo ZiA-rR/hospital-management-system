@@ -1,8 +1,10 @@
+package esp;
 import java.util.ArrayList;
 import java.util.Scanner;
+
 import java.time.LocalDateTime;
 
-// Abstract class for all users
+// Abstract class for all userssdjld
 abstract class user {
     private String name;
     private String id;
@@ -58,6 +60,23 @@ class SMSNotification implements Notifiable {
 
     @Override
     public void sendSMS(String recipient, String message) {
+        System.out.println("Sending SMS to: " + recipient);
+        System.out.println("Message: " + message);
+    }
+}
+
+// EmailNotification class implementing Notifiable
+class EmailNotification implements Notifiable {
+    @Override
+    public void sendEmail(String recipient, String subject, String message) {
+        System.out.println("Sending Email to: " + recipient);
+        System.out.println("Subject: " + subject);
+        System.out.println("Message: " + message);
+    }
+
+    @Override
+    public void sendSMS(String recipient, String message) {
+        // If SMS is not supported, you can leave this empty or print a message
         System.out.println("Sending SMS to: " + recipient);
         System.out.println("Message: " + message);
     }
@@ -453,8 +472,8 @@ public class Test {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         ChatServer chatServer = new ChatServer();
-        SMSNotification smsNotification = new SMSNotification();
-        ReminderService reminderService = new ReminderService(smsNotification);
+        EmailNotification emailNotification = new EmailNotification();
+        ReminderService reminderService = new ReminderService(emailNotification);
 
         while (true) {
             try {
@@ -493,23 +512,21 @@ public class Test {
     }
 
     private static void handleAdministrator(Scanner scanner) {
-        System.out.println("\n--- Administrator Menu ---");
-        System.out.print("Enter your Name: ");
-        String adminName = scanner.nextLine();
-        System.out.print("Enter your ID: ");
-        String adminId = scanner.nextLine();
-        System.out.print("Enter your Email: ");
-        String adminEmail = scanner.nextLine();
-
-        admin = new Administrator(adminId, adminName, adminEmail);
+        // Create default admin if not exists
+        if (admin == null) {
+            admin = new Administrator("ADMIN001", "System Admin", "admin@hospital.com");
+        }
 
         while (true) {
             try {
-                System.out.println("\nWelcome, " + adminName + "!");
+                System.out.println("\n--- Administrator Menu ---");
+                System.out.println("Welcome, System Admin!");
                 System.out.println("1. Add Doctor");
                 System.out.println("2. Add Patient");
                 System.out.println("3. View System Logs");
-                System.out.println("4. Back to Main Menu");
+                System.out.println("4. Send System Notification");
+                System.out.println("5. Send Email to Family Member");
+                System.out.println("6. Back to Main Menu");
                 System.out.print("Enter your choice: ");
                 int adminChoice = scanner.nextInt();
                 scanner.nextLine();
@@ -544,9 +561,113 @@ public class Test {
                         admin.viewSystemLogs();
                         break;
                     case 4:
+                        System.out.println("\nSend System Notification:");
+                        System.out.println("1. Send to Doctor");
+                        System.out.println("2. Send to Patient");
+                        System.out.print("Choose recipient type (1-2): ");
+                        int notifChoice = scanner.nextInt();
+                        scanner.nextLine();
+
+                        switch (notifChoice) {
+                            case 1:
+                                System.out.println("\nAvailable Doctors:");
+                                for (Doctor doc : admin.getDoctors()) {
+                                    System.out.println("ID: " + doc.getId() + " - Name: " + doc.getName());
+                                }
+                                System.out.print("\nEnter Doctor ID: ");
+                                String inputDoctorId = scanner.nextLine();
+                                Doctor targetDoc = null;
+                                for (Doctor doc : admin.getDoctors()) {
+                                    if (doc.getId().equals(inputDoctorId)) {
+                                        targetDoc = doc;
+                                        break;
+                                    }
+                                }
+                                if (targetDoc != null) {
+                                    System.out.print("Enter subject: ");
+                                    String docSubject = scanner.nextLine();
+                                    System.out.print("Enter message: ");
+                                    String docMessage = scanner.nextLine();
+                                    
+                                    EmailNotification emailNotif = new EmailNotification();
+                                    emailNotif.sendEmail(targetDoc.getEmail(), docSubject, docMessage);
+                                    System.out.println("Email sent successfully to Dr. " + targetDoc.getName());
+                                } else {
+                                    System.out.println("Doctor not found with ID: " + inputDoctorId);
+                                }
+                                break;
+
+                            case 2:
+                                System.out.println("\nAvailable Patients:");
+                                for (patient pat : admin.getPatients()) {
+                                    System.out.println("ID: " + pat.getId() + " - Name: " + pat.getName());
+                                }
+                                System.out.print("\nEnter Patient ID: ");
+                                String inputPatientId = scanner.nextLine();
+                                patient targetPat = null;
+                                for (patient pat : admin.getPatients()) {
+                                    if (pat.getId().equals(inputPatientId)) {
+                                        targetPat = pat;
+                                        break;
+                                    }
+                                }
+                                if (targetPat != null) {
+                                    System.out.print("Enter subject: ");
+                                    String patSubject = scanner.nextLine();
+                                    System.out.print("Enter message: ");
+                                    String patMessage = scanner.nextLine();
+                                    
+                                    EmailNotification emailNotif = new EmailNotification();
+                                    emailNotif.sendEmail(targetPat.getEmail(), patSubject, patMessage);
+                                    System.out.println("Email sent successfully to patient " + targetPat.getName());
+                                } else {
+                                    System.out.println("Patient not found with ID: " + inputPatientId);
+                                }
+                                break;
+
+                            default:
+                                System.out.println("Invalid choice!");
+                        }
+                        break;
+
+                    case 5:
+                        System.out.println("\nAvailable Patients:");
+                        for (patient pat : admin.getPatients()) {
+                            System.out.println("ID: " + pat.getId() + " - Name: " + pat.getName());
+                        }
+                        System.out.print("\nEnter Patient ID: ");
+                        String selectedPatientId = scanner.nextLine();
+                        patient selectedPatient = null;
+                        for (patient pat : admin.getPatients()) {
+                            if (pat.getId().equals(selectedPatientId)) {
+                                selectedPatient = pat;
+                                break;
+                            }
+                        }
+                        if (selectedPatient != null) {
+                            System.out.print("Enter family member's email: ");
+                            String familyEmail = scanner.nextLine();
+                            System.out.print("Enter subject: ");
+                            String subject = scanner.nextLine();
+                            System.out.print("Enter message: ");
+                            String message = scanner.nextLine();
+                            
+                            EmailNotification emailNotif = new EmailNotification();
+                            String formattedMessage = "Regarding Patient: " + selectedPatient.getName() + 
+                                                    "\nPatient ID: " + selectedPatient.getId() + 
+                                                    "\n\nMessage from Hospital Administration:\n" + message;
+                            emailNotif.sendEmail(familyEmail, subject, formattedMessage);
+                            System.out.println("Email sent successfully to family member of patient " + selectedPatient.getName());
+                        } else {
+                            System.out.println("Patient not found with ID: " + selectedPatientId);
+                        }
+                        break;
+
+                    case 6:
                         return;
+
                     default:
-                        System.out.println("Invalid choice! Please enter a number between 1 and 4.");
+                        System.out.println("Invalid choice! Please enter a number between 1 and 6.");
                 }
             } catch (Exception e) {
                 System.out.println("Error: Invalid input. Please enter a valid number.");
@@ -664,7 +785,9 @@ public class Test {
                 System.out.println("6. Set Appointment Reminder");
                 System.out.println("7. Set Medication Reminder");
                 System.out.println("8. Request Appointment");
-                System.out.println("9. Back to Main Menu");
+                System.out.println("9. Send Email to Doctor");
+                System.out.println("10. Send Email to Administrator");
+                System.out.println("11. Back to Main Menu");
                 System.out.print("Enter your choice: ");
                 int patientChoice = scanner.nextInt();
                 scanner.nextLine();
@@ -741,9 +864,55 @@ public class Test {
                         }
                         break;
                     case 9:
+                        System.out.println("\nAvailable Doctors:");
+                        for (Doctor doc : admin.getDoctors()) {
+                            System.out.println("ID: " + doc.getId() + " - Name: " + doc.getName());
+                        }
+                        System.out.print("\nEnter Doctor ID: ");
+                        String inputDoctorId = scanner.nextLine();
+                        Doctor targetDoc = null;
+                        for (Doctor doc : admin.getDoctors()) {
+                            if (doc.getId().equals(inputDoctorId)) {
+                                targetDoc = doc;
+                                break;
+                            }
+                        }
+                        if (targetDoc != null) {
+                            System.out.print("Enter subject: ");
+                            String subject = scanner.nextLine();
+                            System.out.print("Enter message: ");
+                            String doctorMessage = scanner.nextLine();
+                            
+                            EmailNotification emailNotif = new EmailNotification();
+                            String formattedMessage = "From Patient: " + patient.getName() + 
+                                                    "\nPatient ID: " + patient.getId() + 
+                                                    "\n\n" + doctorMessage;
+                            emailNotif.sendEmail(targetDoc.getEmail(), subject, formattedMessage);
+                            System.out.println("Email sent successfully to Dr. " + targetDoc.getName());
+                        } else {
+                            System.out.println("Doctor not found with ID: " + inputDoctorId);
+                        }
+                        break;
+
+                    case 10:
+                        System.out.print("Enter subject: ");
+                        String adminSubject = scanner.nextLine();
+                        System.out.print("Enter message: ");
+                        String adminMessage = scanner.nextLine();
+                        
+                        EmailNotification adminEmailNotif = new EmailNotification();
+                        String formattedAdminMessage = "From Patient: " + patient.getName() + 
+                                                     "\nPatient ID: " + patient.getId() + 
+                                                     "\n\n" + adminMessage;
+                        adminEmailNotif.sendEmail(admin.getEmail(), adminSubject, formattedAdminMessage);
+                        System.out.println("Email sent successfully to Administrator");
+                        break;
+
+                    case 11:
                         return;
+
                     default:
-                        System.out.println("Invalid choice! Please try again.");
+                        System.out.println("Invalid choice! Please enter a number between 1 and 11.");
                 }
             } catch (Exception e) {
                 System.out.println("Error: Invalid input. Please enter a valid number.");
